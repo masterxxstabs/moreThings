@@ -1,8 +1,7 @@
-﻿using UnityEngine;
-using MelonLoader;
+﻿using MelonLoader;
 using Modules;
 using System.Collections.Generic;
-using Harmony;
+using UnityEngine;
 
 public class Core : MelonMod
 {
@@ -14,9 +13,13 @@ public class Core : MelonMod
         {
             MelonLogger.Msg("Loading More Things Modules...");
 
-            // Add any modules you want to load here
-            modules.Add(new BackpackMod());
+            if (ModuleManager.IsModuleEnabled("BackpackMod"))
+                modules.Add(new BackpackMod());
 
+            if (ModuleManager.IsModuleEnabled("StackModule"))
+                modules.Add(new stackModule());           
+
+            // Initialize modules
             foreach (var module in modules)
             {
                 module.OnModInit();
@@ -57,6 +60,15 @@ public class Core : MelonMod
             {
                 MelonLogger.Error($"Error in OnUpdate for module {module.GetType().Name}: {ex.Message}");
             }
+        }
+
+        if (Input.GetKeyDown(KeyCode.F7))
+        {
+            ModuleManager.ToggleModule("BackpackMod");
+        }
+        if (Input.GetKeyDown(KeyCode.F8))
+        {
+            ModuleManager.ToggleModule("StackModule");
         }
     }
 }
