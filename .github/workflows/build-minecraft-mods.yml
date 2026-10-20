@@ -1,0 +1,50 @@
+name: Build Minecraft mods
+
+on:
+  push:
+    paths-ignore:
+      - 'jars/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Build every mod project
+        run: |
+          mkdir -p jars
+          for dir in */; do
+            dir="${dir%/}"
+            [ -f "$dir/gradlew" ] && [ -f "$dir/src/main/resources/META-INF/mods.toml" ] || continue
+            echo "::group::Building $dir"
+            (cd "$dir" && chmod +x gradlew && ./gradlew build --no-daemon)
+            find "$dir/build/libs" -name '*.jar' ! -name '*-sources.jar' -exec cp {} jars/ \;
+            echo "::endgroup::"
+          done
+          ls -l jars
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mod-jars
+          path: jars/*.jar
+
+      - name: Commit built jars
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f jars/*.jar
+          git diff --cached --quiet && exit 0
+          git commit -m "Build mod jars [skip ci]"
+          git push
